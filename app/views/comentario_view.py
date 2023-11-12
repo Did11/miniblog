@@ -1,4 +1,4 @@
-from flask import request, jsonify, abort
+from flask import request, jsonify
 from flask.views import MethodView
 from app import db
 from app.models.comentario import Comentario
@@ -17,3 +17,29 @@ class ComentarioView(MethodView):
     def post(self):
         data = request.get_json()
         errors = comentario_schema.validate(data)
+
+    def put(self, comentario_id):
+        comentario_schema = ComentarioSchema()
+        comentario = Comentario.query.get(comentario_id)
+
+        if not comentario:
+            return jsonify({"mensaje": "Comentario no encontrado"}), 404
+
+        try:
+            datos = comentario_schema.load(request.json)
+            for key, value in datos.items():
+                setattr(comentario, key, value)
+            db.session.commit()
+            return comentario_schema.dump(comentario), 200
+        except ValidationError as err:
+            return err.messages, 400
+
+    def delete(self, comentario_id):
+        comentario = Comentario.query.get(comentario_id)
+
+        if not comentario:
+            return jsonify({"mensaje": "Comentario no encontrado"}), 404
+
+        db.session.delete(comentario)
+        db.session.commit()
+        return jsonify({"mensaje": "Comentario eliminado"}), 200

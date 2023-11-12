@@ -2,17 +2,31 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_login import LoginManager
 
 db = SQLAlchemy()
 migrate = Migrate()
+login_manager = LoginManager()
 
 def create_app():
     app = Flask(__name__)
+
+    # Configuración de la aplicación
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///miniblog.db')
+    app.config['SECRET_KEY'] = 'tu_secret_key_aqui'  # Asegúrate de configurar una clave secreta
 
-
+    # Inicialización de la base de datos y migraciones
     db.init_app(app)
     migrate.init_app(app, db)
+
+    # Configuración de Flask-Login
+    login_manager.init_app(app)
+    login_manager.login_view = 'login'  # Asegúrate de tener una vista 'login'
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        from app.models import Usuario  # Importa tu modelo de Usuario aquí
+        return Usuario.query.get(int(user_id))
 
     # Importar vistas dentro de la función para evitar importaciones circulares
     with app.app_context():
